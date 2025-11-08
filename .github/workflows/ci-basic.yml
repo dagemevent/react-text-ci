@@ -43,28 +43,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: use Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || npm install
 
-      - name: Build the Project
+      - name: Build app
         run: npm run build
 
-      - name: start preview server
+      - name: Start preview server
         run: |
-          npm run preview --host 0.0.0.0 --port 4173 &
+          npm run preview -- --host 0.0.0.0 --port 4173 &
           npx wait-on http://127.0.0.1:4173
 
-      - name: Run DAST Scan
+      - name: Run OWASP ZAP Baseline Scan
         run: |
-          docker run --network host -t owasp/zap2docker-stable
+          docker run --network host -t owasp/zap2docker-stable             zap-baseline.py -t http://127.0.0.1:4173 -r zap-report.html || true
 
-      - name: Upload DAST Report
+      - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
