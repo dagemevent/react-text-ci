@@ -35,3 +35,37 @@ jobs:
         with:
           name: production-build
           path: dist/
+  dast-scan:
+    needs: build-and-test
+    runs-on: ununtu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the Project
+        run: npm run build
+
+      - name: start preview server
+        run: |
+          npm run preview --host 0.0.0.0 --port 4173 &
+          npx wait-on http://127.0.0.1:4173
+
+      - name: Run DAST Scan
+        run: |
+          docker run --network host -t owasp/zap2docker-stable
+
+      - name: Upload DAST Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-report.html
